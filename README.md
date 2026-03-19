@@ -1,6 +1,6 @@
 # mpp-hack
 
-Pay-per-use AI over iMessage, powered by the [Machine Payments Protocol](https://mpp.dev) and [Tempo](https://tempo.xyz).
+Pay friends and talk to AI — all over iMessage, powered by [Tempo](https://tempo.xyz) and [MPP](https://mpp.dev).
 
 Two apps in a Bun monorepo:
 
