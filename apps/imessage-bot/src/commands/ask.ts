@@ -2,11 +2,12 @@
 // "ask <prompt>" — query any MPP service, paid from user's wallet balance.
 
 import type { Account } from "viem";
-import { config } from "../config";
 
 export interface AskDeps {
   mppFetch: (account: Account, url: string, init?: RequestInit) => Promise<Response>;
   getViemAccount: (walletId: string, address: `0x${string}`) => Account;
+  serviceUrl: string;
+  model: string;
 }
 
 export interface AskInput {
@@ -27,11 +28,11 @@ export async function handleAsk(
     const account = deps.getViemAccount(input.walletId, input.address);
 
     const body = JSON.stringify({
-      model: config.mpp.model,
+      model: deps.model,
       messages: [{ role: "user", content: input.prompt }],
     });
 
-    const response = await deps.mppFetch(account, config.mpp.serviceUrl, {
+    const response = await deps.mppFetch(account, deps.serviceUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,

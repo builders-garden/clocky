@@ -14,6 +14,7 @@ import { handleAsk } from "./commands/ask";
 import { createUserWallet, getViemAccount } from "./wallet/privy";
 import { getBalance, transferPathUSD, parseAmount } from "./wallet/transfer";
 import { mppFetch } from "./mpp/client";
+import { config } from "./config";
 
 export interface BotDeps {
   db: Database;
@@ -36,20 +37,23 @@ export interface BotReply {
  * Ensure a user exists for the given phone number.
  * If they don't exist, create a Privy wallet and register them.
  *
- * TOCTOU safety: if two concurrent messages race past the initial read,
- * the second `createUser` will hit the UNIQUE constraint on `phone`. We
- * catch that and fall back to reading the row the winner inserted.
+ * TOCTOU safety: wallet creation is inside the try block so that if two
+ * concurrent messages race, only the winner's wallet is saved. The loser
+ * never calls createUserWallet() — it reads the row the winner inserted.
+ * This prevents orphaned Privy wallets on concurrent first-message bursts.
  */
 async function getOrCreateUser(db: Database, phone: string): Promise<User> {
   const existing = getUser(db, phone);
   if (existing) return existing;
 
-  console.log(`Creating wallet for new user: ${phone}`);
-  const wallet = await createUserWallet();
+  // Re-check inside try: concurrent request may have inserted between read and here
   try {
+    console.log(`Creating wallet for new user: ${phone}`);
+    const wallet = await createUserWallet();
     return createUser(db, phone, wallet.id, wallet.address);
   } catch {
-    // Lost the race — another concurrent request already inserted this user
+    // Lost the race — another concurrent request already inserted this user.
+    // The wallet we may have created is unused; read the winner's row instead.
     const created = getUser(db, phone);
     if (created) return created;
     throw new Error(`Failed to create or retrieve user for phone: ${phone}`);
@@ -189,7 +193,7 @@ export async function handleMessage(
             walletId: sender.privy_wallet_id,
             address: sender.address as `0x${string}`,
           },
-          { mppFetch, getViemAccount }
+          { mppFetch, getViemAccount, serviceUrl: config.mpp.serviceUrl, model: config.mpp.model }
         ),
         private: false, // GPT answers are public — the whole point of group usage
       };

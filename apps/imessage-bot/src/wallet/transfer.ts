@@ -20,6 +20,12 @@ import { tempoActions } from "viem/tempo";
 import { PATHUSD_ADDRESS, TEMPO_TESTNET_CAIP2 } from "../config";
 import { getPrivyClient } from "./privy";
 
+// The CAIP-2 identifier used for the Privy fallback path must match the chain
+// used by the primary (tempoActions) path. tempoModerato.id = 42431 = testnet.
+// If the chain config ever changes (e.g. mainnet), update ACTIVE_CAIP2 here
+// to keep both paths in sync and avoid cross-chain fund loss.
+const ACTIVE_CAIP2 = TEMPO_TESTNET_CAIP2; // derived from tempoModerato (chain 42431)
+
 // TIP-20 ABI subset for balanceOf (read-only, no signing needed)
 const TOKEN_ABI = [
   {
@@ -117,7 +123,7 @@ export async function transferPathUSD(
     .wallets()
     .ethereum()
     .sendTransaction(fromWalletId, {
-      caip2: TEMPO_TESTNET_CAIP2,
+      caip2: ACTIVE_CAIP2,
       params: {
         transaction: {
           to: PATHUSD_ADDRESS,
