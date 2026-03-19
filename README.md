@@ -1,4 +1,4 @@
-# mpp-hack
+# clocky
 
 Pay friends and talk to AI — all over iMessage, powered by [Tempo](https://tempo.xyz) and [MPP](https://mpp.dev).
 
