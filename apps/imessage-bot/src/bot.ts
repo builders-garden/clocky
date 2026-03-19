@@ -35,6 +35,10 @@ export interface BotReply {
 /**
  * Ensure a user exists for the given phone number.
  * If they don't exist, create a Privy wallet and register them.
+ *
+ * TOCTOU safety: if two concurrent messages race past the initial read,
+ * the second `createUser` will hit the UNIQUE constraint on `phone`. We
+ * catch that and fall back to reading the row the winner inserted.
  */
 async function getOrCreateUser(db: Database, phone: string): Promise<User> {
   const existing = getUser(db, phone);
@@ -42,7 +46,14 @@ async function getOrCreateUser(db: Database, phone: string): Promise<User> {
 
   console.log(`Creating wallet for new user: ${phone}`);
   const wallet = await createUserWallet();
-  return createUser(db, phone, wallet.id, wallet.address);
+  try {
+    return createUser(db, phone, wallet.id, wallet.address);
+  } catch {
+    // Lost the race — another concurrent request already inserted this user
+    const created = getUser(db, phone);
+    if (created) return created;
+    throw new Error(`Failed to create or retrieve user for phone: ${phone}`);
+  }
 }
 
 /**
@@ -103,19 +114,42 @@ function parseCommand(text: string): Command {
  * The `private` flag tells the caller whether to reply in-channel or via DM:
  * - private: true  → always DM the sender (balance, deposit, history)
  * - private: false → reply to wherever the message came from (group or DM)
+ *
+ * Wallet provisioning is lazy — new Privy wallets are created only for commands
+ * that require a wallet (balance, deposit, history, send, ask). Commands that
+ * don't need a wallet (help, unknown) never trigger wallet creation.
  */
 export async function handleMessage(
   senderPhone: string,
   text: string,
   deps: BotDeps
 ): Promise<BotReply> {
-  const sender = await getOrCreateUser(deps.db, senderPhone);
   const command = parseCommand(text);
 
-  switch (command.type) {
-    case "help":
-      return { text: handleHelp(), private: false };
+  // Commands that don't require a wallet — respond immediately without provisioning
+  if (command.type === "help") {
+    return { text: handleHelp(), private: false };
+  }
+  if (command.type === "unknown") {
+    return {
+      text: [
+        `I didn't understand that. Try:`,
+        ``,
+        `send $5 to +1234567890`,
+        `ask what is the capital of France`,
+        `balance`,
+        `deposit`,
+        `history`,
+        `help`,
+      ].join("\n"),
+      private: false,
+    };
+  }
 
+  // All other commands need a wallet — provision lazily on first use
+  const sender = await getOrCreateUser(deps.db, senderPhone);
+
+  switch (command.type) {
     case "balance":
       return {
         text: await handleBalance(sender, { getBalance }),
@@ -158,21 +192,6 @@ export async function handleMessage(
           { mppFetch, getViemAccount }
         ),
         private: false, // GPT answers are public — the whole point of group usage
-      };
-
-    case "unknown":
-      return {
-        text: [
-          `I didn't understand that. Try:`,
-          ``,
-          `send $5 to +1234567890`,
-          `ask what is the capital of France`,
-          `balance`,
-          `deposit`,
-          `history`,
-          `help`,
-        ].join("\n"),
-        private: false,
       };
   }
 }
