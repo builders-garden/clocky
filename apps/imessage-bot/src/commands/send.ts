@@ -36,6 +36,15 @@ export async function handleSend(
     return `Invalid amount: "${input.amount}". Use: send $5 to +1234567890`;
   }
 
+  // Input validation: enforce transfer limits
+  const amountVal = parseFloat(amount);
+  if (amountVal < 0.01) {
+    return "Minimum transfer amount is $0.01.";
+  }
+  if (amountVal > 1000) {
+    return "Maximum transfer amount is $1,000.";
+  }
+
   // 2. Can't send to yourself
   if (input.recipientPhone === sender.phone) {
     return "You can't send money to yourself.";

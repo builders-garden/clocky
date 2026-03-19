@@ -51,7 +51,11 @@ export async function handleAsk(
       data?.content?.[0]?.text ||
       JSON.stringify(data).slice(0, 500);
 
-    return reply;
+    // Show MPP cost if provided in payment-receipt header
+    const receipt = response.headers.get("x-payment-receipt") || response.headers.get("payment-receipt");
+    const costLine = receipt ? `\n\n(Paid via MPP)` : "";
+
+    return reply + costLine;
   } catch (err) {
     console.error("Ask command failed:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
