@@ -16,6 +16,9 @@ import { getBalance, transferPathUSD, parseAmount } from "./wallet/transfer";
 import { mppFetch } from "./mpp/client";
 import { config } from "./config";
 
+/** Amount of PathUSD to seed new users with from the treasury */
+const SEED_AMOUNT = "1"; // $1 PathUSD
+
 export interface BotDeps {
   db: Database;
   sendMessage: (phone: string, text: string) => Promise<void>;
@@ -50,7 +53,30 @@ async function getOrCreateUser(db: Database, phone: string): Promise<User> {
   try {
     console.log(`Creating wallet for new user: ${phone}`);
     const wallet = await createUserWallet();
-    return createUser(db, phone, wallet.id, wallet.address);
+    const user = createUser(db, phone, wallet.id, wallet.address);
+
+    // Auto-fund from treasury if configured
+    if (config.treasury.walletId && config.treasury.address) {
+      try {
+        const treasuryAccount = getViemAccount(
+          config.treasury.walletId,
+          config.treasury.address
+        );
+        const txHash = await transferPathUSD(
+          treasuryAccount,
+          config.treasury.walletId,
+          wallet.address,
+          SEED_AMOUNT
+        );
+        console.log(
+          `Seeded ${phone} with $${SEED_AMOUNT} PathUSD (tx: ${txHash})`
+        );
+      } catch (err) {
+        console.warn(`Failed to seed ${phone} from treasury:`, err);
+      }
+    }
+
+    return user;
   } catch {
     // Lost the race — another concurrent request already inserted this user.
     // The wallet we may have created is unused; read the winner's row instead.

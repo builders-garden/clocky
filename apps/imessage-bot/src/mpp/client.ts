@@ -30,7 +30,7 @@ export async function mppFetch(
 ): Promise<Response> {
   const mppx = Mppx.create({
     polyfill: false,
-    methods: [tempo({ account })],
+    methods: [tempo({ account, maxDeposit: "1" })],
   });
 
   return mppx.fetch(url, init);

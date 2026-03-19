@@ -15,7 +15,7 @@ async function main() {
   console.log("Database initialized.");
 
   // Initialize iMessage SDK
-  const sdk = new IMessageSDK();
+  const sdk = new IMessageSDK({ debug: true });
 
   async function sendMessage(phone: string, text: string): Promise<void> {
     await sdk.send(phone, text);
@@ -35,7 +35,12 @@ async function main() {
     const text = msg.text;
 
     if (!senderPhone || text == null || text.trim() === "") return;
-    if (msg.isFromMe) return;
+    // Skip own messages unless they look like a bot command (for self-testing)
+    if (msg.isFromMe) {
+      const lower = text.trim().toLowerCase();
+      const isCommand = /^(ask|send|balance|bal|deposit|address|history|txs|help|\?|commands|start|hey|hi|hello)\b/.test(lower);
+      if (!isCommand) return;
+    }
     if (config.botPhone && senderPhone === config.botPhone) return;
 
     const label = msg.isGroupChat
