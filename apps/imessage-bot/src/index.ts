@@ -34,7 +34,7 @@ async function main() {
     const senderPhone = msg.sender;
     const text = msg.text;
 
-    if (!senderPhone || !text) return;
+    if (!senderPhone || text == null || text.trim() === "") return;
     if (msg.isFromMe) return;
     if (config.botPhone && senderPhone === config.botPhone) return;
 
@@ -52,21 +52,18 @@ async function main() {
       // Reply routing: private replies always go as DM to sender
       if (reply.private || !msg.isGroupChat) {
         await sdk.send(senderPhone, reply.text);
-        console.log(
-          `[BOT -> ${senderPhone} (DM)]: ${reply.text.slice(0, 100)}...`
-        );
+        const preview = reply.text.length > 100 ? reply.text.slice(0, 100) + "..." : reply.text;
+        console.log(`[BOT -> ${senderPhone} (DM)]: ${preview}`);
       } else {
         // Public reply in group
         await sdk.send(msg.chatId, reply.text);
-        console.log(
-          `[BOT -> GROUP ${msg.chatId.slice(0, 12)}...]: ${reply.text.slice(0, 100)}...`
-        );
+        const preview = reply.text.length > 100 ? reply.text.slice(0, 100) + "..." : reply.text;
+        console.log(`[BOT -> GROUP ${msg.chatId.slice(0, 12)}...]: ${preview}`);
       }
     } catch (err) {
       console.error(`Error handling message from ${senderPhone}:`, err);
-      // Error replies go to the same channel as the original message
-      const errorTarget = msg.isGroupChat ? msg.chatId : senderPhone;
-      await sdk.send(errorTarget, "Something went wrong. Please try again.");
+      // Error replies always go as DM to sender (safe regardless of command type)
+      await sdk.send(senderPhone, "Something went wrong. Please try again.");
     }
   }
 
@@ -86,15 +83,19 @@ async function main() {
   └────────────────────────────────┘
   `);
 
-  process.on("SIGINT", () => {
+  process.on("SIGINT", async () => {
     console.log("\nShutting down...");
+    sdk.stopWatching();
     db.close();
+    await sdk.close();
     process.exit(0);
   });
 
-  process.on("SIGTERM", () => {
+  process.on("SIGTERM", async () => {
     console.log("\nShutting down...");
+    sdk.stopWatching();
     db.close();
+    await sdk.close();
     process.exit(0);
   });
 }
