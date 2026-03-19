@@ -45,15 +45,24 @@ const proxy = Proxy.create({
     'MPP-gated proxy for Venice AI inference APIs. Pay per session for chat ' +
     'completions via sessions; flat fee for images, audio, and embeddings.',
   services: [
-    // Use Service.from() directly: openai() preset hardcodes service ID 'openai', not 'venice'
+    // Use Service.from() directly: openai() preset hardcodes service ID 'openai', not 'venice'.
+    // Note: Proxy.create() uses only baseUrl's origin for upstream requests (the path is
+    // discarded), so we use rewriteRequest to prepend Venice's /api prefix.
     Service.from('venice', {
       bearer: veniceApiKey,
-      baseUrl: 'https://api.venice.ai/api',
+      baseUrl: 'https://api.venice.ai',
       description: 'Chat completions, embeddings, image generation, and audio transcription.',
       title: 'Venice AI',
+      rewriteRequest(req) {
+        const url = new URL(req.url)
+        url.pathname = `/api${url.pathname}`
+        const rewritten = new Request(url.toString(), req)
+        rewritten.headers.delete('host')
+        return rewritten
+      },
       routes: {
         // Session-based per-token via MPP sessions billing — ideal for streaming chat
-        'POST /v1/chat/completions':   mppx.session({ amount: '0.0001' }),
+        'POST /v1/chat/completions':   mppx.session({ amount: '0.0001', unitType: 'token' }),
         // Flat charge per request — images are expensive and non-streaming
         'POST /v1/images/generations': mppx.charge({ amount: '0.05' }),
         // Flat charge per TTS request
