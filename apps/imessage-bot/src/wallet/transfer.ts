@@ -1,5 +1,5 @@
 // src/wallet/transfer.ts
-// PathUSD transfers + balance on Tempo chain
+// USDC transfers + balance on Tempo mainnet
 //
 // Uses tempoActions() per https://docs.privy.io/recipes/evm/tempo
 //
@@ -15,16 +15,14 @@ import {
   encodeFunctionData,
   type Account,
 } from "viem";
-import { tempoModerato } from "viem/chains";
+import { tempo } from "viem/chains";
 import { tempoActions } from "viem/tempo";
-import { PATHUSD_ADDRESS, TEMPO_TESTNET_CAIP2 } from "../config";
+import { USDC_ADDRESS, TEMPO_MAINNET_CAIP2 } from "../config";
 import { getPrivyClient } from "./privy";
 
 // The CAIP-2 identifier used for the Privy fallback path must match the chain
-// used by the primary (tempoActions) path. tempoModerato.id = 42431 = testnet.
-// If the chain config ever changes (e.g. mainnet), update ACTIVE_CAIP2 here
-// to keep both paths in sync and avoid cross-chain fund loss.
-const ACTIVE_CAIP2 = TEMPO_TESTNET_CAIP2; // derived from tempoModerato (chain 42431)
+// used by the primary (tempoActions) path. tempo.id = 4217 = mainnet.
+const ACTIVE_CAIP2 = TEMPO_MAINNET_CAIP2; // derived from tempo (chain 4217)
 
 // TIP-20 ABI subset for balanceOf (read-only, no signing needed)
 const TOKEN_ABI = [
@@ -48,26 +46,26 @@ const TOKEN_ABI = [
 ] as const;
 
 const publicClient = createPublicClient({
-  chain: tempoModerato,
+  chain: tempo,
   transport: http(),
 });
 
 /**
- * Get PathUSD balance for an address.
+ * Get USDC balance for an address.
  * Returns formatted string like "5.00".
  */
 export async function getBalance(address: `0x${string}`): Promise<string> {
   const balance = await publicClient.readContract({
-    address: PATHUSD_ADDRESS,
+    address: USDC_ADDRESS,
     abi: TOKEN_ABI,
     functionName: "balanceOf",
     args: [address],
   });
-  return formatUnits(balance, 6); // PathUSD has 6 decimals
+  return formatUnits(balance, 6); // USDC has 6 decimals
 }
 
 /**
- * Transfer PathUSD from one Privy-backed account to another address.
+ * Transfer USDC from one Privy-backed account to another address.
  *
  * Primary approach: viem walletClient + tempoActions().token.transferSync()
  *   - transferSync({ to, amount, token }) waits for receipt
@@ -81,7 +79,7 @@ export async function getBalance(address: `0x${string}`): Promise<string> {
  *
  * Returns the transaction hash.
  */
-export async function transferPathUSD(
+export async function transferUSDC(
   fromAccount: Account,
   fromWalletId: string, // INVARIANT: fromAccount and fromWalletId must refer to the same Privy wallet
   toAddress: `0x${string}`,
@@ -93,14 +91,14 @@ export async function transferPathUSD(
   try {
     const walletClient = createWalletClient({
       account: fromAccount,
-      chain: tempoModerato,
+      chain: tempo,
       transport: http(),
     }).extend(tempoActions());
 
     const result = await walletClient.token.transferSync({
       to: toAddress,
       amount: parsedAmount,
-      token: PATHUSD_ADDRESS,
+      token: USDC_ADDRESS,
     });
 
     return result.receipt.transactionHash;
@@ -126,7 +124,7 @@ export async function transferPathUSD(
       caip2: ACTIVE_CAIP2,
       params: {
         transaction: {
-          to: PATHUSD_ADDRESS,
+          to: USDC_ADDRESS,
           data: encodedData,
         },
       },

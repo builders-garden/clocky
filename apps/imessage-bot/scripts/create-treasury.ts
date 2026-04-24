@@ -18,4 +18,4 @@ const wallet = await privy.wallets().create({ chain_type: "ethereum" });
 console.log("Treasury wallet created!\n");
 console.log(`TREASURY_WALLET_ID=${wallet.id}`);
 console.log(`TREASURY_ADDRESS=${wallet.address}`);
-console.log("\nAdd these to your .env, then fund the address with PathUSD from your Tempo wallet.");
+console.log("\nAdd these to your .env, then fund the address with USDC on Tempo mainnet.");

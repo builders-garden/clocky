@@ -2,7 +2,7 @@
 // Venice AI MPP Proxy — full service implementation
 //
 // Exposes Venice AI's OpenAI-compatible API behind the Machine Payments Protocol.
-// Clients pay in PathUSD on Tempo:
+// Clients pay in USDC on Tempo mainnet:
 //   - Chat completions: per-token via MPP sessions (off-chain EIP-712 vouchers)
 //   - Images / audio / embeddings: one-time on-chain charge per request
 //
@@ -16,8 +16,8 @@ import { Mppx, tempo } from 'mppx/server'
 
 // --- Environment validation ---
 
-const PATHUSD = (process.env.PAYMENT_CURRENCY ??
-  '0x20c0000000000000000000000000000000000000') as `0x${string}`
+const USDC = (process.env.PAYMENT_CURRENCY ??
+  '0x20C000000000000000000000b9537d11c60E8b50') as `0x${string}`
 
 const recipient = process.env.RECIPIENT_ADDRESS as `0x${string}`
 if (!recipient) throw new Error('Missing required env var: RECIPIENT_ADDRESS')
@@ -33,7 +33,7 @@ if (Number.isNaN(port)) throw new Error('PORT must be a number')
 // MPP_SECRET_KEY is auto-detected from env by Mppx.create()
 
 const mppx = Mppx.create({
-  methods: [tempo({ currency: PATHUSD, recipient })],
+  methods: [tempo({ currency: USDC, recipient })],
 })
 
 // --- Proxy config ---

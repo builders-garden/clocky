@@ -12,12 +12,12 @@ import { handleHistory } from "./commands/history";
 import { handleSend, type SendInput } from "./commands/send";
 import { handleAsk } from "./commands/ask";
 import { createUserWallet, getViemAccount } from "./wallet/privy";
-import { getBalance, transferPathUSD, parseAmount } from "./wallet/transfer";
+import { getBalance, transferUSDC, parseAmount } from "./wallet/transfer";
 import { mppFetch } from "./mpp/client";
 import { config } from "./config";
 
-/** Amount of PathUSD to seed new users with from the treasury */
-const SEED_AMOUNT = "1"; // $1 PathUSD
+/** Amount of USDC to seed new users with from the treasury */
+const SEED_AMOUNT = "1"; // $1 USDC
 
 export interface BotDeps {
   db: Database;
@@ -62,14 +62,14 @@ async function getOrCreateUser(db: Database, phone: string): Promise<User> {
           config.treasury.walletId,
           config.treasury.address
         );
-        const txHash = await transferPathUSD(
+        const txHash = await transferUSDC(
           treasuryAccount,
           config.treasury.walletId,
           wallet.address,
           SEED_AMOUNT
         );
         console.log(
-          `Seeded ${phone} with $${SEED_AMOUNT} PathUSD (tx: ${txHash})`
+          `Seeded ${phone} with $${SEED_AMOUNT} USDC (tx: ${txHash})`
         );
       } catch (err) {
         console.warn(`Failed to seed ${phone} from treasury:`, err);
@@ -202,7 +202,7 @@ export async function handleMessage(
       return {
         text: await handleSend(deps.db, sender, command.input, {
           getBalance,
-          transferPathUSD,
+          transferUSDC,
           parseAmount,
           getOrCreateUser: (phone) => getOrCreateUser(deps.db, phone),
           getViemAccount,

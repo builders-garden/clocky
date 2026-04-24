@@ -15,9 +15,20 @@ async function main() {
   console.log("Database initialized.");
 
   // Initialize iMessage SDK
-  const sdk = new IMessageSDK({ debug: true });
+  const sdk = new IMessageSDK({ debug: false });
+
+  // Track recently sent replies so we don't process our own bot responses
+  // (critical for self-testing where bot replies appear as incoming messages)
+  const recentBotReplies = new Set<string>();
+  const REPLY_TTL_MS = 30_000; // forget after 30s
+
+  function trackReply(text: string) {
+    recentBotReplies.add(text);
+    setTimeout(() => recentBotReplies.delete(text), REPLY_TTL_MS);
+  }
 
   async function sendMessage(phone: string, text: string): Promise<void> {
+    trackReply(text);
     await sdk.send(phone, text);
   }
 
@@ -35,6 +46,11 @@ async function main() {
     const text = msg.text;
 
     if (!senderPhone || text == null || text.trim() === "") return;
+    // Skip messages that match a recent bot reply (prevents self-chat loops)
+    if (recentBotReplies.has(text)) {
+      console.log(`[SKIP] Ignoring bot's own reply echo`);
+      return;
+    }
     // Skip own messages unless they look like a bot command (for self-testing)
     if (msg.isFromMe) {
       const lower = text.trim().toLowerCase();
@@ -56,19 +72,27 @@ async function main() {
 
       // Reply routing: private replies always go as DM to sender
       if (reply.private || !msg.isGroupChat) {
+        trackReply(reply.text);
         await sdk.send(senderPhone, reply.text);
         const preview = reply.text.length > 100 ? reply.text.slice(0, 100) + "..." : reply.text;
-        console.log(`[BOT -> ${senderPhone} (DM)]: ${preview}`);
+        console.log(`[BOT -> ${senderPhone}]: ${preview}`);
       } else {
         // Public reply in group
+        trackReply(reply.text);
         await sdk.send(msg.chatId, reply.text);
         const preview = reply.text.length > 100 ? reply.text.slice(0, 100) + "..." : reply.text;
-        console.log(`[BOT -> GROUP ${msg.chatId.slice(0, 12)}...]: ${preview}`);
+        console.log(`[BOT -> GROUP]: ${preview}`);
       }
     } catch (err) {
       console.error(`Error handling message from ${senderPhone}:`, err);
       // Error replies always go as DM to sender (safe regardless of command type)
-      await sdk.send(senderPhone, "Something went wrong. Please try again.");
+      try {
+        const errText = "Something went wrong. Please try again.";
+        trackReply(errText);
+        await sdk.send(senderPhone, errText);
+      } catch (sendErr) {
+        console.error(`[DEBUG] Failed to send error reply:`, sendErr);
+      }
     }
   }
 
@@ -81,7 +105,7 @@ async function main() {
   console.log(`
   ┌────────────────────────────────┐
   │     iMessage Pay Bot           │
-  │     Tempo Testnet              │
+  │     Tempo Mainnet              │
   │     Privy Custody + MPP        │
   ├────────────────────────────────┤
   │  Watching DMs + Groups...      │

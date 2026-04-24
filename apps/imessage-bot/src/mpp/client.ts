@@ -28,10 +28,19 @@ export async function mppFetch(
   url: string,
   init?: RequestInit
 ): Promise<Response> {
+  console.log(`[MPP] Creating mppx client — account=${account.address} url=${url}`);
   const mppx = Mppx.create({
     polyfill: false,
     methods: [tempo({ account, maxDeposit: "1" })],
   });
 
-  return mppx.fetch(url, init);
+  console.log(`[MPP] Calling mppx.fetch...`);
+  try {
+    const response = await mppx.fetch(url, init);
+    console.log(`[MPP] mppx.fetch completed — status=${response.status}`);
+    return response;
+  } catch (err) {
+    console.error(`[MPP] mppx.fetch FAILED:`, err);
+    throw err;
+  }
 }

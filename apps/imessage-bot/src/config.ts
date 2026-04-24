@@ -31,10 +31,9 @@ export const config = {
   dbPath: optional("DB_PATH", "imessage-pay.db"),
 } as const;
 
-// PathUSD token address on Tempo
-export const PATHUSD_ADDRESS =
-  "0x20c0000000000000000000000000000000000000" as const;
+// USDC token address on Tempo mainnet
+export const USDC_ADDRESS =
+  "0x20C000000000000000000000b9537d11c60E8b50" as const;
 
 // Tempo CAIP-2 identifiers for Privy
-export const TEMPO_TESTNET_CAIP2 = "eip155:42431";
 export const TEMPO_MAINNET_CAIP2 = "eip155:4217";

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>clocky — schema</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Instrument+Sans:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #f0f0f0;
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .canvas {
+    width: 960px;
+    position: relative;
+  }
+
+  .title {
+    font-family: 'Space Mono', monospace;
+    font-size: 42px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 16px;
+    color: #888;
+    margin-bottom: 56px;
+    font-weight: 400;
+  }
+
+  /* Flow layout */
+  .flow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+  }
+
+  /* Nodes */
+  .node {
+    border-radius: 16px;
+    padding: 24px 28px;
+    position: relative;
+    min-width: 180px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .node-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .node-label {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .node-desc {
+    font-size: 12px;
+    color: #999;
+    line-height: 1.4;
+  }
+
+  /* User */
+  .node-user {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1.5px solid #334;
+  }
+  .node-user .node-label { color: #7ec8e3; }
+
+  /* Bot */
+  .node-bot {
+    background: linear-gradient(135deg, #1a2e1a, #162e21);
+    border: 1.5px solid #2a4a2a;
+  }
+  .node-bot .node-label { color: #7ee3a0; }
+
+  /* Proxy */
+  .node-proxy {
+    background: linear-gradient(135deg, #2e2a1a, #2e2116);
+    border: 1.5px solid #4a3a2a;
+  }
+  .node-proxy .node-label { color: #e3c77e; }
+
+  /* Venice */
+  .node-venice {
+    background: linear-gradient(135deg, #2e1a2e, #2e1621);
+    border: 1.5px solid #4a2a4a;
+  }
+  .node-venice .node-label { color: #e37ec8; }
+
+  /* Arrows */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    padding-top: 40px;
+    flex-shrink: 0;
+  }
+
+  .arrow-line {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .arrow-dash {
+    width: 50px;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, #555 0px, #555 6px, transparent 6px, transparent 10px);
+  }
+
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 10px solid #555;
+  }
+
+  .arrow-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-top: 8px;
+    white-space: nowrap;
+  }
+
+  .tag-imessage {
+    background: #1a1a2e;
+    color: #7ec8e3;
+    border: 1px solid #334;
+  }
+
+  .tag-mpp {
+    background: #2e2a1a;
+    color: #e3c77e;
+    border: 1px solid #4a3a2a;
+  }
+
+  .tag-api {
+    background: #2e1a2e;
+    color: #e37ec8;
+    border: 1px solid #4a2a4a;
+  }
+
+  /* Bottom bar */
+  .bottom {
+    margin-top: 48px;
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    color: #777;
+  }
+
+  .chip span {
+    color: #f0f0f0;
+    font-weight: 700;
+  }
+
+  /* Actions row under user */
+  .actions {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .action {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: #5a8a9a;
+    background: #0d1520;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #1a2a3a;
+  }
+
+  /* Price tags under proxy routes */
+  .routes {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .route {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: #b8a060;
+    background: #1a1508;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #3a2a10;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="title">clocky</div>
+    <div class="subtitle">Pay friends and talk to AI — all over iMessage</div>
+
+    <div class="flow">
+      <!-- User -->
+      <div class="node node-user">
+        <span class="node-icon">💬</span>
+        <div class="node-label">you</div>
+        <div class="node-desc">iMessage</div>
+        <div class="actions">
+          <div class="action">ask what is dark matter</div>
+          <div class="action">send $5 to +1234</div>
+          <div class="action">balance</div>
+        </div>
+      </div>
+
+      <!-- Arrow 1 -->
+      <div class="arrow">
+        <div class="arrow-line">
+          <div class="arrow-dash"></div>
+          <div class="arrow-head"></div>
+        </div>
+        <div class="arrow-tag tag-imessage">iMessage</div>
+      </div>
+
+      <!-- Bot -->
+      <div class="node node-bot">
+        <span class="node-icon">🤖</span>
+        <div class="node-label">bot</div>
+        <div class="node-desc">Privy wallets<br>SQLite · USDC</div>
+      </div>
+
+      <!-- Arrow 2 -->
+      <div class="arrow">
+        <div class="arrow-line">
+          <div class="arrow-dash"></div>
+          <div class="arrow-head"></div>
+        </div>
+        <div class="arrow-tag tag-mpp">USDC via MPP</div>
+      </div>
+
+      <!-- Proxy -->
+      <div class="node node-proxy">
+        <span class="node-icon">⚡</span>
+        <div class="node-label">proxy</div>
+        <div class="node-desc">mppx · Tempo</div>
+        <div class="routes">
+          <div class="route">chat $0.0001/tok</div>
+          <div class="route">image $0.05</div>
+          <div class="route">audio $0.02</div>
+        </div>
+      </div>
+
+      <!-- Arrow 3 -->
+      <div class="arrow">
+        <div class="arrow-line">
+          <div class="arrow-dash"></div>
+          <div class="arrow-head"></div>
+        </div>
+        <div class="arrow-tag tag-api">Bearer</div>
+      </div>
+
+      <!-- Venice -->
+      <div class="node node-venice">
+        <span class="node-icon">🎭</span>
+        <div class="node-label">Venice AI</div>
+        <div class="node-desc">GPT · DALL-E · TTS<br>Embeddings</div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="chip">chain <span>Tempo (4217)</span></div>
+      <div class="chip">currency <span>USDC</span></div>
+      <div class="chip">runtime <span>Bun</span></div>
+      <div class="chip">protocol <span>MPP (402)</span></div>
+    </div>
+  </div>
+</body>
+</html>

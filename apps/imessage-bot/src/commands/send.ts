@@ -7,7 +7,7 @@ import { logTransaction, updateTransaction } from "../db/transactions";
 
 export interface SendDeps {
   getBalance: (address: `0x${string}`) => Promise<string>;
-  transferPathUSD: (
+  transferUSDC: (
     from: Account,
     fromWalletId: string,
     to: `0x${string}`,
@@ -60,7 +60,7 @@ export async function handleSend(
     return `Could not retrieve your balance: ${msg}`;
   }
 
-  // Use epsilon comparison to handle floating-point precision (PathUSD has 6 decimals)
+  // Use epsilon comparison to handle floating-point precision (USDC has 6 decimals)
   const balanceNum = parseFloat(balance);
   const amountNum = parseFloat(amount);
   if (balanceNum - amountNum < -1e-9) {
@@ -80,7 +80,7 @@ export async function handleSend(
       sender.address as `0x${string}`
     );
 
-    const txHash = await deps.transferPathUSD(
+    const txHash = await deps.transferUSDC(
       senderAccount,
       sender.privy_wallet_id,
       recipient.address as `0x${string}`,
@@ -93,7 +93,7 @@ export async function handleSend(
     try {
       await deps.sendMessage(
         recipient.phone,
-        `You received $${amount} PathUSD from ${sender.phone}! Reply "balance" to check your balance.`
+        `You received $${amount} USDC from ${sender.phone}! Reply "balance" to check your balance.`
       );
     } catch (notifyErr) {
       console.error("Failed to notify recipient:", notifyErr);
